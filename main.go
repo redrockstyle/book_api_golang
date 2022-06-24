@@ -9,40 +9,10 @@ import (
 	"log"
 )
 
-type BookForm struct {
-	Book string `json:"book"`
-	Year string `json:"year"`
-}
-
-type AuthorForm struct {
-	Author string `json:"author"`
-	Age    string `json:"age"`
-}
-
-type ABIDForm struct {
-	AID string `json:"aid"`
-	BID string `json:"bid"`
-}
-
-type UpdateBookForm struct {
-	Id   string `json:"id"`
-	Book string `json:"book"`
-	Year string `json:"year"`
-}
-
-type UpdateAuthorForm struct {
-	Id     string `json:"id"`
-	Author string `json:"author"`
-	Age    string `json:"age"`
-}
-
-type OffsetLimitForm struct {
-	Offset string `json:"offset"`
-	Limit  string `json:"limit"`
-}
-
 func main() {
-	Db := database.InitDatabase()
+	cfg := database.DBConfig{User: "user", Password: "password", Host: "192.168.224.130", Port: "5432", Path: "books"}
+
+	Db := database.InitDatabase(cfg)
 	database.InitTable(Db)
 	database.SomethingInputDB(Db)
 	InitREST(Db)
@@ -50,23 +20,34 @@ func main() {
 
 func InitREST(Db *gorm.DB) {
 	app := fiber.New()
-	// GET
-	app.Get("/book/all", func(c *fiber.Ctx) error {
-		olForm := new(OffsetLimitForm)
-		if err := c.BodyParser(olForm); err != nil {
-			log.Printf("%v: get all book", err)
+
+	// LOGIN
+	app.Post("/login", func(c *fiber.Ctx) error {
+		userForm := new(requests.UserForm)
+		if err := c.BodyParser(userForm); err != nil {
+			log.Printf("%v: post login", err)
 			return err
 		}
-		books := requests.GetBooks(olForm.Offset, olForm.Limit, Db)
+		user := requests.Login(userForm.Login, userForm.Password, Db)
+		return c.JSON(user)
+	})
+	app.Post("/registration", func(c *fiber.Ctx) error {
+		userForm := new(requests.UserForm)
+		if err := c.BodyParser(userForm); err != nil {
+			log.Printf("%v: post registrtion", err)
+			return err
+		}
+		user := requests.Registration(userForm.Login, userForm.Password, Db)
+		return c.JSON(user)
+	})
+
+	// GET
+	app.Get("/book/all", func(c *fiber.Ctx) error {
+		books := requests.GetBooks(c.Query("offset"), c.Query("limit"), Db)
 		return c.JSON(books)
 	})
 	app.Get("/author/all", func(c *fiber.Ctx) error {
-		olForm := new(OffsetLimitForm)
-		if err := c.BodyParser(olForm); err != nil {
-			log.Printf("%v: get all authors", err)
-			return err
-		}
-		authors := requests.GetAuthors(olForm.Offset, olForm.Limit, Db)
+		authors := requests.GetAuthors(c.Query("offset"), c.Query("limit"), Db)
 		return c.JSON(authors)
 	})
 	app.Get("/book/:id", func(c *fiber.Ctx) error {
@@ -80,7 +61,7 @@ func InitREST(Db *gorm.DB) {
 
 	// POST
 	app.Post("/author", func(c *fiber.Ctx) error {
-		authorForm := new(AuthorForm)
+		authorForm := new(requests.AuthorForm)
 		if err := c.BodyParser(authorForm); err != nil {
 			return err
 		}
@@ -88,7 +69,7 @@ func InitREST(Db *gorm.DB) {
 		return c.JSON(addAuthor)
 	})
 	app.Post("/book", func(c *fiber.Ctx) error {
-		bookForm := new(BookForm)
+		bookForm := new(requests.BookForm)
 		if err := c.BodyParser(bookForm); err != nil {
 			return err
 		}
@@ -96,7 +77,7 @@ func InitREST(Db *gorm.DB) {
 		return c.JSON(addBook)
 	})
 	app.Post("/bind", func(c *fiber.Ctx) error {
-		bookForm := new(ABIDForm)
+		bookForm := new(requests.ABIDForm)
 		if err := c.BodyParser(bookForm); err != nil {
 			return err
 		}
@@ -106,7 +87,7 @@ func InitREST(Db *gorm.DB) {
 
 	// PUT
 	app.Put("/book/update", func(c *fiber.Ctx) error {
-		upbForm := new(UpdateBookForm)
+		upbForm := new(requests.UpdateBookForm)
 		if err := c.BodyParser(upbForm); err != nil {
 			return err
 		}
@@ -114,7 +95,7 @@ func InitREST(Db *gorm.DB) {
 		return c.JSON(updateBook)
 	})
 	app.Put("/author/update", func(c *fiber.Ctx) error {
-		upaForm := new(UpdateAuthorForm)
+		upaForm := new(requests.UpdateAuthorForm)
 		if err := c.BodyParser(upaForm); err != nil {
 			return err
 		}

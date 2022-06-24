@@ -24,6 +24,33 @@ type AuthorBookID struct {
 	AuthorID int16 `sql:"type smallint;not null;"`
 }
 
+type BookForm struct {
+	Book string `json:"book"`
+	Year string `json:"year"`
+}
+
+type AuthorForm struct {
+	Author string `json:"author"`
+	Age    string `json:"age"`
+}
+
+type ABIDForm struct {
+	AID string `json:"aid"`
+	BID string `json:"bid"`
+}
+
+type UpdateBookForm struct {
+	Id   string `json:"id"`
+	Book string `json:"book"`
+	Year string `json:"year"`
+}
+
+type UpdateAuthorForm struct {
+	Id     string `json:"id"`
+	Author string `json:"author"`
+	Age    string `json:"age"`
+}
+
 func GetBooks(offset, limit string, Db *gorm.DB) any {
 
 	if len(offset) == 0 || len(limit) == 0 {
